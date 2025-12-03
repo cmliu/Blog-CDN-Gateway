@@ -285,6 +285,24 @@ function generateHtml(urls, img, icon, avatar, beian, title, siteName, path, par
             background: var(--fastest-bg);
             border-color: var(--fastest-border);
             box-shadow: 0 8px 20px var(--fastest-shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .url-item.fastest::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                90deg,
+                transparent 0%,
+                rgba(255, 255, 255, 0.4) 50%,
+                transparent 100%
+            );
+            animation: shine 0.8s ease-in-out forwards;
         }
 
         .url-name {
@@ -332,6 +350,15 @@ function generateHtml(urls, img, icon, avatar, beian, title, siteName, path, par
             0% { opacity: 0.6; }
             50% { opacity: 1; }
             100% { opacity: 0.6; }
+        }
+
+        @keyframes shine {
+            0% {
+                left: -100%;
+            }
+            100% {
+                left: 100%;
+            }
         }
 
         .footer {
@@ -507,7 +534,7 @@ function generateHtml(urls, img, icon, avatar, beian, title, siteName, path, par
                 subtitle.textContent = \`即将跳转至: \${fastest.name}\`;
                 subtitle.style.color = '#10b981';
 
-                // Redirect
+                // Redirect after shine animation completes
                 setTimeout(() => {
                     window.location.href = fastest.testUrl + currentPath + currentParams;
                 }, 800);
