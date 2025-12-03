@@ -1,5 +1,6 @@
 let urls = [
     'https://blog.cmliussss.com#EdgeOne CDN',
+    'https://ali.blog.cmliussss.com#Ali CDN',
     'https://fastly.blog.cmliussss.com#Fastly CDN',
     'https://vercel.blog.cmliussss.com#Vercel CDN',
     'https://netlify.blog.cmliussss.com#Netlify CDN'
@@ -36,7 +37,7 @@ async function handleRequest(request, env) {
     const ads = env.ADS || 'google.com, pub-9350003957494520, DIRECT, f08c47fec0942fa0';
     const 网站图标 = env.ICO || 'https://raw.cmliussss.com/favicon.ico';
     const 网站头像 = env.PNG || 'https://raw.cmliussss.com/IMG_0038.png';
-    const 网络备案 = env.BEIAN || `<a href='https://icp.gov.moe/'>萌ICP备-20070707号</a>`;
+    const 网络备案 = env.BEIAN || `<b>📈今日访问人数:</b><span id="visitCount">加载中...</span> <b>📊当前在线人数:</b><div id="liveuser" style="display: inline;">加载中...</div> <script src="https://liveuser.cmliussss.com/main.js?sessionId=blog.cmliussss.com"></script> <script> fetch('https://tongji.blog.cmliussss.com/?id=blog.cmliussss.com') .then(r => r.json()) .then(d => document.getElementById('visitCount').innerText = d.visitCount) .catch(e => document.getElementById('visitCount').innerText = '加载失败'); </script>`;
     const 网页标题 = env.TITLE || 'BlogCDN 智能访问网关';
     const 站点名称 = env.NAME || 'CMLiussss Blog';
 
