@@ -1,0 +1,15 @@
+{
+    "name": "blog-cdn-gateway",
+    "version": "1.0.0",
+    "description": "BlogCDN 智能访问网关",
+    "main": "functions/[[path]].js",
+    "scripts": {
+        "dev": "wrangler pages dev .",
+        "deploy": "wrangler pages deploy ."
+    },
+    "author": "CMLiussss",
+    "license": "MIT",
+    "devDependencies": {
+        "wrangler": "^3.0.0"
+    }
+}
