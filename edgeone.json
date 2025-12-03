@@ -1,0 +1,24 @@
+{
+  "name": "blog-cdn-gateway",
+  "version": "1.0.0",
+  "description": "BlogCDN 智能访问网关",
+  "functions": {
+    "directory": "functions"
+  },
+  "routes": [
+    {
+      "src": "/.*",
+      "dest": "/functions/[[path]].js"
+    }
+  ],
+  "env": {
+    "NODE_VERSION": "18"
+  },
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/index",
+      "statusCode": 302
+    }
+  ]
+}
