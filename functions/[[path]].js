@@ -298,11 +298,14 @@ function generateHtml(urls, img, icon, avatar, beian, title, siteName, path, par
         .url-latency {
             font-size: 14px;
             font-weight: 600;
-            padding: 6px 12px;
-            border-radius: 20px;
+            height: 28px;
+            padding: 0 12px;
+            border-radius: 14px;
             background: rgba(0, 0, 0, 0.05);
             min-width: 80px;
-            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             transition: all 0.3s ease;
         }
         
