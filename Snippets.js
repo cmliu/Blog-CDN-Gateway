@@ -1,546 +1,753 @@
 const CONFIG = {
-    // CDN 测速地址，格式为 "访问地址#显示名称"。
-    URLS: [
-        'https://blog.cmliussss.com#Ali CDN',
-        'https://fastly.blog.cmliussss.com#Fastly CDN',
-        'https://vercel.blog.cmliussss.com#Vercel CDN',
-        'https://netlify.blog.cmliussss.com#Netlify CDN'
-    ],
-    // /ads.txt 返回内容。
-    ADS: 'google.com, pub-9350003957494520, DIRECT, f08c47fec0942fa0',
-    // 网站图标，同时用于响应 /favicon.ico。
-    ICO: 'https://raw.cmliussss.com/favicon.ico',
-    // 页面中间显示的头像或 Logo。
-    PNG: 'https://raw.cmliussss.com/IMG_0038.png',
-    // 背景图片，填写多张时会随机展示一张。
-    IMG: [
-        'https://raw.cmliussss.com/keqing1080p.jpg'
-    ],
-    // 页脚内容，可以写备案号、统计代码或项目链接。
-    BEIAN: `由 <a href="https://github.com/cmliu/Blog-CDN-Gateway" target="_blank" rel="noopener noreferrer">Blog-CDN-Gateway</a> 强力驱动`,
-    // 页面主标题。
-    TITLE: 'BlogCDN 智能访问网关',
-    // 浏览器标题栏中显示的站点名称。
-    NAME: 'CMLiussss Blog'
+	// CDN 测速地址，格式为 "访问地址#显示名称"。
+	URLS: [
+		'https://blog.cmliussss.com#Ali CDN',
+		'https://fastly.blog.cmliussss.com#Fastly CDN',
+		'https://vercel.blog.cmliussss.com#Vercel CDN',
+		'https://netlify.blog.cmliussss.com#Netlify CDN'
+	],
+	// /ads.txt 返回内容。
+	ADS: 'google.com, pub-9350003957494520, DIRECT, f08c47fec0942fa0',
+	// 网站图标，同时用于响应 /favicon.ico。
+	ICO: 'https://raw.cmliussss.com/favicon.ico',
+	// 页面中间显示的头像或 Logo。
+	PNG: 'https://raw.cmliussss.com/IMG_0038.png',
+	// 背景图片，填写多张时会随机展示一张；留空则使用内置默认背景。
+	IMG: [
+		//'https://raw.cmliussss.com/keqing1080p.jpg'
+	],
+	// 命中首个返回 200 的线路后，等待多少毫秒再跳转。
+	JUMP_DELAY: 999,
+	// 页脚内容，可以写备案号、统计代码或项目链接。
+	BEIAN: `由 <a href="https://github.com/cmliu/Blog-CDN-Gateway" target="_blank" rel="noopener noreferrer">Blog-CDN-Gateway</a> 强力驱动`,
+	// 页面主标题。
+	TITLE: 'BlogCDN 智能访问网关',
+	// 浏览器标题栏中显示的站点名称。
+	NAME: 'CMLiussss Blog'
 };
 
 export default {
-    async fetch(request) {
-        return handleRequest(request);
-    }
+	async fetch(request) {
+		const url = new URL(request.url);
+		const path = url.pathname;
+		const params = url.search;
+
+		if (url.pathname.toLowerCase() === '/ads.txt') {
+			return new Response(CONFIG.ADS, {
+				headers: {
+					'content-type': 'text/plain;charset=UTF-8'
+				}
+			});
+		}
+
+		if (url.pathname.toLowerCase() === '/favicon.ico') {
+			return fetch(CONFIG.ICO);
+		}
+
+		const urls = toList(CONFIG.URLS);
+		const images = toList(CONFIG.IMG);
+		const img = images.length > 0
+			? images[Math.floor(Math.random() * images.length)]
+			: '';
+
+		const html = generateHtml(
+			urls,
+			img,
+			CONFIG.ICO,
+			CONFIG.PNG,
+			CONFIG.BEIAN,
+			CONFIG.TITLE,
+			CONFIG.NAME,
+			CONFIG.JUMP_DELAY,
+			path,
+			params
+		);
+
+		return new Response(html, {
+			headers: { 'content-type': 'text/html;charset=UTF-8' }
+		});
+	}
 };
 
-async function handleRequest(request) {
-    const url = new URL(request.url);
-    const path = url.pathname;
-    const params = url.search;
-
-    if (url.pathname.toLowerCase() === '/ads.txt') {
-        return new Response(CONFIG.ADS, {
-            headers: {
-                'content-type': 'text/plain;charset=UTF-8'
-            }
-        });
-    }
-
-    if (url.pathname.toLowerCase() === '/favicon.ico') {
-        return fetch(CONFIG.ICO);
-    }
-
-    const urls = toList(CONFIG.URLS);
-    const images = toList(CONFIG.IMG);
-    const img = images.length > 0
-        ? images[Math.floor(Math.random() * images.length)]
-        : 'https://raw.cmliussss.com/keqing1080p.jpg';
-
-    const html = generateHtml(
-        urls,
-        img,
-        CONFIG.ICO,
-        CONFIG.PNG,
-        CONFIG.BEIAN,
-        CONFIG.TITLE,
-        CONFIG.NAME,
-        path,
-        params
-    );
-
-    return new Response(html, {
-        headers: { 'content-type': 'text/html;charset=UTF-8' }
-    });
-}
-
 function toList(value) {
-    if (Array.isArray(value)) return value.filter(Boolean);
-    if (!value) return [];
+	if (Array.isArray(value)) return value.filter(Boolean);
+	if (!value) return [];
 
-    let text = String(value).replace(/[\t|"'\r\n]+/g, ',').replace(/,+/g, ',');
-    if (text.charAt(0) === ',') text = text.slice(1);
-    if (text.charAt(text.length - 1) === ',') text = text.slice(0, text.length - 1);
+	let text = String(value).replace(/[\t|"'\r\n]+/g, ',').replace(/,+/g, ',');
+	if (text.charAt(0) === ',') text = text.slice(1);
+	if (text.charAt(text.length - 1) === ',') text = text.slice(0, text.length - 1);
 
-    return text ? text.split(',').filter(Boolean) : [];
+	return text ? text.split(',').filter(Boolean) : [];
 }
 
-function generateHtml(urls, img, icon, avatar, beian, title, siteName, path, params) {
-    return `<!DOCTYPE html>
+function generateHtml(urls, img, icon, avatar, beian, title, siteName, jumpDelay, path, params) {
+	const backgroundImage = img ? `url(${JSON.stringify(img)})` : 'var(--default-bg)';
+
+	return `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${siteName} - ${title}</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --primary-color: #10b981;
-            --primary-gradient: linear-gradient(135deg, #34d399 0%, #059669 100%);
-            --glass-bg: rgba(255, 255, 255, 0.7);
-            --glass-border: rgba(255, 255, 255, 0.5);
-            --text-main: #1f2937;
-            --text-secondary: #4b5563;
-            --card-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            --item-bg: rgba(255, 255, 255, 0.6);
-            --item-hover-bg: rgba(255, 255, 255, 0.9);
-            --fastest-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(240, 253, 244, 0.95));
-            --fastest-border: #34d399;
-            --fastest-shadow: rgba(16, 185, 129, 0.15);
-        }
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="color-scheme" content="light dark">
+	<title>${siteName} - ${title}</title>
+	<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+	<style>
+		:root {
+			color-scheme: light dark;
+			--primary-color: #10b981;
+			--accent-color: #2563eb;
+			--danger-color: #dc2626;
+			--page-bg-color: #eef2ff;
+			--default-bg:
+				linear-gradient(135deg, rgba(14, 165, 233, 0.18), transparent 34%),
+				linear-gradient(315deg, rgba(16, 185, 129, 0.18), transparent 38%),
+				repeating-linear-gradient(90deg, rgba(37, 99, 235, 0.08) 0 1px, transparent 1px 72px),
+				repeating-linear-gradient(0deg, rgba(37, 99, 235, 0.06) 0 1px, transparent 1px 72px),
+				linear-gradient(135deg, #f8fafc 0%, #ecfeff 46%, #eef2ff 100%);
+			--body-overlay:
+				linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(15, 23, 42, 0.18)),
+				rgba(0, 0, 0, 0.08);
+			--panel-bg: rgba(255, 255, 255, 0.78);
+			--panel-border: rgba(255, 255, 255, 0.56);
+			--text-main: #1f2937;
+			--text-secondary: #4b5563;
+			--text-muted: #6b7280;
+			--panel-shadow: 0 24px 70px rgba(15, 23, 42, 0.18);
+			--avatar-border: rgba(255, 255, 255, 0.78);
+			--avatar-shadow: 0 12px 28px rgba(15, 23, 42, 0.18);
+			--ring-primary: #10b981;
+			--ring-accent: #2563eb;
+			--item-bg: rgba(255, 255, 255, 0.64);
+			--item-hover-bg: rgba(255, 255, 255, 0.92);
+			--item-border: rgba(255, 255, 255, 0.36);
+			--item-hover-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+			--fastest-bg: rgba(236, 253, 245, 0.92);
+			--fastest-border: #34d399;
+			--fastest-shadow: rgba(16, 185, 129, 0.15);
+			--shine-color: rgba(255, 255, 255, 0.4);
+			--url-dot-glow: rgba(37, 99, 235, 0.12);
+			--summary-bg: rgba(236, 253, 245, 0.7);
+			--summary-border: rgba(16, 185, 129, 0.22);
+			--summary-error-bg: rgba(254, 226, 226, 0.72);
+			--summary-error-border: rgba(220, 38, 38, 0.28);
+			--status-glow: rgba(16, 185, 129, 0.14);
+			--error-glow: rgba(220, 38, 38, 0.14);
+			--checking-text: #4b5563;
+			--checking-bg: rgba(0, 0, 0, 0.05);
+			--footer-border: rgba(148, 163, 184, 0.22);
+			--good-text: #047857;
+			--good-bg: #dcfce7;
+			--fair-text: #b45309;
+			--fair-bg: #fef3c7;
+			--poor-text: #b91c1c;
+			--poor-bg: #fee2e2;
+		}
 
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --glass-bg: rgba(17, 24, 39, 0.75);
-                --glass-border: rgba(255, 255, 255, 0.1);
-                --text-main: #f3f4f6;
-                --text-secondary: #9ca3af;
-                --card-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-                --item-bg: rgba(31, 41, 55, 0.6);
-                --item-hover-bg: rgba(31, 41, 55, 0.9);
-                --fastest-bg: linear-gradient(135deg, rgba(6, 78, 59, 0.4), rgba(6, 95, 70, 0.4));
-                --fastest-border: #059669;
-                --fastest-shadow: rgba(16, 185, 129, 0.1);
-            }
-        }
+		@media (prefers-color-scheme: dark) {
+			:root {
+				--primary-color: #34d399;
+				--accent-color: #60a5fa;
+				--danger-color: #f87171;
+				--page-bg-color: #020617;
+				--default-bg:
+					linear-gradient(135deg, rgba(37, 99, 235, 0.22), transparent 36%),
+					linear-gradient(315deg, rgba(16, 185, 129, 0.14), transparent 40%),
+					repeating-linear-gradient(90deg, rgba(148, 163, 184, 0.08) 0 1px, transparent 1px 72px),
+					repeating-linear-gradient(0deg, rgba(148, 163, 184, 0.06) 0 1px, transparent 1px 72px),
+					linear-gradient(135deg, #020617 0%, #0f172a 52%, #111827 100%);
+				--body-overlay:
+					linear-gradient(135deg, rgba(15, 23, 42, 0.28), rgba(0, 0, 0, 0.58)),
+					rgba(0, 0, 0, 0.46);
+				--panel-bg: rgba(17, 24, 39, 0.78);
+				--panel-border: rgba(255, 255, 255, 0.12);
+				--text-main: #f3f4f6;
+				--text-secondary: #9ca3af;
+				--text-muted: #94a3b8;
+				--panel-shadow: 0 24px 70px rgba(0, 0, 0, 0.35);
+				--avatar-border: rgba(255, 255, 255, 0.18);
+				--avatar-shadow: 0 12px 28px rgba(0, 0, 0, 0.42);
+				--ring-primary: #34d399;
+				--ring-accent: #60a5fa;
+				--item-bg: rgba(31, 41, 55, 0.6);
+				--item-hover-bg: rgba(31, 41, 55, 0.9);
+				--item-border: rgba(255, 255, 255, 0.1);
+				--item-hover-shadow: 0 10px 24px rgba(0, 0, 0, 0.24);
+				--fastest-bg: rgba(6, 95, 70, 0.32);
+				--fastest-border: #059669;
+				--fastest-shadow: rgba(16, 185, 129, 0.1);
+				--shine-color: rgba(255, 255, 255, 0.14);
+				--url-dot-glow: rgba(96, 165, 250, 0.18);
+				--summary-bg: rgba(5, 150, 105, 0.14);
+				--summary-border: rgba(52, 211, 153, 0.24);
+				--summary-error-bg: rgba(127, 29, 29, 0.34);
+				--summary-error-border: rgba(248, 113, 113, 0.24);
+				--status-glow: rgba(52, 211, 153, 0.16);
+				--error-glow: rgba(248, 113, 113, 0.16);
+				--checking-text: #cbd5e1;
+				--checking-bg: rgba(255, 255, 255, 0.1);
+				--footer-border: rgba(148, 163, 184, 0.18);
+				--good-text: #34d399;
+				--good-bg: rgba(5, 150, 105, 0.2);
+				--fair-text: #fbbf24;
+				--fair-bg: rgba(217, 119, 6, 0.22);
+				--poor-text: #f87171;
+				--poor-bg: rgba(220, 38, 38, 0.22);
+			}
+		}
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+		}
 
-        body {
-            font-family: 'Outfit', sans-serif;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-image: url('${img}');
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
-            color: var(--text-main);
-            overflow: hidden;
-        }
+		body {
+			font-family: 'Outfit', sans-serif;
+			position: relative;
+			min-height: 100vh;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			background-color: var(--page-bg-color);
+			background-image: ${backgroundImage};
+			background-size: cover;
+			background-position: center;
+			background-attachment: fixed;
+			color: var(--text-main);
+			overflow-x: hidden;
+			padding: 32px 16px;
+		}
 
-        body::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.1);
-            backdrop-filter: blur(3px);
-            z-index: -1;
-            transition: background 0.3s ease;
-        }
+		body::before {
+			content: '';
+			position: fixed;
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			background: var(--body-overlay);
+			backdrop-filter: blur(4px);
+			pointer-events: none;
+			z-index: 0;
+			transition: background 0.3s ease;
+		}
 
-        @media (prefers-color-scheme: dark) {
-            body::before {
-                background: rgba(0, 0, 0, 0.4);
-            }
-        }
+		.container {
+			position: relative;
+			z-index: 1;
+			background: var(--panel-bg);
+			backdrop-filter: blur(22px);
+			-webkit-backdrop-filter: blur(22px);
+			border: 1px solid var(--panel-border);
+			border-radius: 12px;
+			padding: 28px;
+			width: min(92vw, 760px);
+			box-shadow: var(--panel-shadow);
+			display: grid;
+			gap: 24px;
+			transform: translateY(20px);
+			opacity: 0;
+			animation: slideUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+		}
 
-        .container {
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            border-radius: 32px;
-            padding: 48px;
-            width: 90%;
-            max-width: 520px;
-            box-shadow: var(--card-shadow);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            transform: translateY(20px);
-            opacity: 0;
-            animation: slideUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-        }
+		.topbar {
+			width: 100%;
+			display: grid;
+			grid-template-columns: auto minmax(0, 1fr) auto;
+			gap: 18px;
+			align-items: center;
+		}
 
-        @keyframes slideUp {
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
+		@keyframes slideUp {
+			to {
+				transform: translateY(0);
+				opacity: 1;
+			}
+		}
 
-        .logo-wrapper {
-            position: relative;
-            width: 140px;
-            height: 140px;
-            margin-bottom: 32px;
-        }
+		.logo-wrapper {
+			position: relative;
+			width: 84px;
+			height: 84px;
+		}
 
-        .logo {
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            border: 6px solid rgba(255, 255, 255, 0.8);
-            object-fit: cover;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-            transition: transform 0.5s ease;
-        }
+		.logo {
+			width: 100%;
+			height: 100%;
+			border-radius: 50%;
+			border: 4px solid var(--avatar-border);
+			object-fit: cover;
+			box-shadow: var(--avatar-shadow);
+			transition: transform 0.5s ease;
+		}
 
-        .logo:hover {
-            transform: scale(1.05) rotate(5deg);
-        }
+		.logo:hover {
+			transform: scale(1.05) rotate(5deg);
+		}
 
-        .status-ring {
-            position: absolute;
-            top: -10px;
-            left: -10px;
-            right: -10px;
-            bottom: -10px;
-            border-radius: 50%;
-            border: 3px solid transparent;
-            border-top-color: #10b981;
-            border-right-color: #34d399;
-            animation: spin 2s linear infinite;
-        }
+		.status-ring {
+			position: absolute;
+			top: -7px;
+			left: -7px;
+			right: -7px;
+			bottom: -7px;
+			border-radius: 50%;
+			border: 2px solid transparent;
+			border-top-color: var(--ring-primary);
+			border-right-color: var(--ring-accent);
+			animation: spin 2s linear infinite;
+		}
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
+		@keyframes spin {
+			to { transform: rotate(360deg); }
+		}
 
-        h1 {
-            font-size: 32px;
-            font-weight: 700;
-            margin-bottom: 8px;
-            background: linear-gradient(135deg, var(--text-main) 0%, var(--text-secondary) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-align: center;
-        }
+		.header-copy {
+			min-width: 0;
+		}
 
-        .subtitle {
-            font-size: 16px;
-            color: var(--text-secondary);
-            margin-bottom: 40px;
-            font-weight: 400;
-            text-align: center;
-            letter-spacing: 0.5px;
-        }
+		.eyebrow {
+			color: var(--text-muted);
+			font-size: 12px;
+			font-weight: 700;
+			letter-spacing: 0;
+			margin-bottom: 5px;
+			text-transform: uppercase;
+		}
 
-        .url-list {
-            width: 100%;
-            list-style: none;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
+		h1 {
+			font-size: 30px;
+			line-height: 1.18;
+			font-weight: 700;
+			background: linear-gradient(135deg, var(--text-main) 0%, var(--accent-color) 100%);
+			-webkit-background-clip: text;
+			-webkit-text-fill-color: transparent;
+			overflow-wrap: anywhere;
+		}
 
-        .url-item {
-            background: var(--item-bg);
-            padding: 16px 24px;
-            border-radius: 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            border: 1px solid transparent;
-            cursor: default;
-            opacity: 0;
-            animation: fadeIn 0.5s ease forwards;
-        }
+		.subtitle {
+			font-size: 15px;
+			color: var(--text-secondary);
+			margin-top: 8px;
+			font-weight: 400;
+			letter-spacing: 0;
+		}
 
-        .url-item:nth-child(1) { animation-delay: 0.2s; }
-        .url-item:nth-child(2) { animation-delay: 0.3s; }
-        .url-item:nth-child(3) { animation-delay: 0.4s; }
-        .url-item:nth-child(4) { animation-delay: 0.5s; }
-        .url-item:nth-child(5) { animation-delay: 0.6s; }
-        .url-item:nth-child(6) { animation-delay: 0.7s; }
+		.subtitle.is-success {
+			color: var(--primary-color);
+		}
 
-        @keyframes fadeIn {
-            to { opacity: 1; }
-        }
+		.subtitle.is-error {
+			color: var(--danger-color);
+		}
 
-        .url-item:hover {
-            background: var(--item-hover-bg);
-            transform: translateX(8px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-        }
+		.summary-badge {
+			justify-self: end;
+			min-width: 112px;
+			border-radius: 8px;
+			border: 1px solid var(--summary-border);
+			background: var(--summary-bg);
+			color: var(--primary-color);
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			gap: 8px;
+			padding: 11px 14px;
+			font-size: 13px;
+			font-weight: 700;
+			white-space: nowrap;
+		}
 
-        .url-item.fastest {
-            background: var(--fastest-bg);
-            border-color: var(--fastest-border);
-            box-shadow: 0 8px 20px var(--fastest-shadow);
-            position: relative;
-            overflow: hidden;
-        }
+		.summary-badge.error {
+			border-color: var(--summary-error-border);
+			background: var(--summary-error-bg);
+			color: var(--danger-color);
+		}
 
-        .url-item.fastest::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(
-                90deg,
-                transparent 0%,
-                rgba(255, 255, 255, 0.4) 50%,
-                transparent 100%
-            );
-            animation: shine 0.8s ease-in-out forwards;
-        }
+		.summary-badge.error .status-dot {
+			box-shadow: 0 0 0 4px var(--error-glow);
+		}
 
-        .url-name {
-            font-weight: 600;
-            font-size: 16px;
-            color: var(--text-main);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
+		.status-dot {
+			width: 8px;
+			height: 8px;
+			border-radius: 50%;
+			background: currentColor;
+			box-shadow: 0 0 0 4px var(--status-glow);
+		}
 
-        .url-latency {
-            font-size: 14px;
-            font-weight: 600;
-            height: 28px;
-            padding: 0 12px;
-            border-radius: 14px;
-            background: rgba(0, 0, 0, 0.05);
-            min-width: 80px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease;
-        }
+		.url-list {
+			width: 100%;
+			list-style: none;
+			display: flex;
+			flex-direction: column;
+			gap: 10px;
+		}
 
-        @media (prefers-color-scheme: dark) {
-            .url-latency {
-                background: rgba(255, 255, 255, 0.1);
-            }
-        }
+		.url-item {
+			background: var(--item-bg);
+			padding: 14px 16px;
+			border-radius: 8px;
+			display: grid;
+			grid-template-columns: minmax(0, 1fr) auto;
+			gap: 16px;
+			align-items: center;
+			transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+			border: 1px solid var(--item-border);
+			cursor: default;
+			opacity: 0;
+			animation: fadeIn 0.5s ease forwards;
+		}
 
-        .latency-good { color: #059669; background: #d1fae5; }
-        .latency-fair { color: #d97706; background: #fef3c7; }
-        .latency-poor { color: #dc2626; background: #fee2e2; }
-        .latency-checking { color: #4b5563; background: rgba(0, 0, 0, 0.05); animation: pulse 1.5s infinite; }
+		.url-item:nth-child(1) { animation-delay: 0.2s; }
+		.url-item:nth-child(2) { animation-delay: 0.3s; }
+		.url-item:nth-child(3) { animation-delay: 0.4s; }
+		.url-item:nth-child(4) { animation-delay: 0.5s; }
+		.url-item:nth-child(5) { animation-delay: 0.6s; }
+		.url-item:nth-child(6) { animation-delay: 0.7s; }
 
-        @media (prefers-color-scheme: dark) {
-            .latency-good { color: #34d399; background: rgba(5, 150, 105, 0.2); }
-            .latency-fair { color: #fbbf24; background: rgba(217, 119, 6, 0.2); }
-            .latency-poor { color: #f87171; background: rgba(220, 38, 38, 0.2); }
-            .latency-checking { color: #9ca3af; background: rgba(255, 255, 255, 0.1); }
-        }
+		@keyframes fadeIn {
+			to { opacity: 1; }
+		}
 
-        @keyframes pulse {
-            0% { opacity: 0.6; }
-            50% { opacity: 1; }
-            100% { opacity: 0.6; }
-        }
+		.url-item:hover {
+			background: var(--item-hover-bg);
+			transform: translateY(-2px);
+			box-shadow: var(--item-hover-shadow);
+		}
 
-        @keyframes shine {
-            0% {
-                left: -100%;
-            }
-            100% {
-                left: 100%;
-            }
-        }
+		.url-item.fastest {
+			background: var(--fastest-bg);
+			border-color: var(--fastest-border);
+			box-shadow: 0 8px 20px var(--fastest-shadow);
+			position: relative;
+			overflow: hidden;
+		}
 
-        .footer {
-            margin-top: 32px;
-            font-size: 13px;
-            color: var(--text-secondary);
-            text-align: center;
-        }
+		.url-item.fastest::before {
+			content: '';
+			position: absolute;
+			top: 0;
+			left: -100%;
+			width: 100%;
+			height: 100%;
+			background: linear-gradient(
+				90deg,
+				transparent 0%,
+				var(--shine-color) 50%,
+				transparent 100%
+			);
+			animation: shine 0.8s ease-in-out forwards;
+		}
 
-        .footer a {
-            color: var(--primary-color);
-            text-decoration: none;
-            font-weight: 600;
-            position: relative;
-            transition: color 0.3s ease;
-        }
+		.url-name {
+			font-weight: 600;
+			font-size: 16px;
+			color: var(--text-main);
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
 
-        .footer a::after {
-            content: '';
-            position: absolute;
-            bottom: -2px;
-            left: 0;
-            width: 0;
-            height: 2px;
-            background: var(--primary-color);
-            transition: width 0.3s ease;
-        }
+		.url-info {
+			display: flex;
+			position: relative;
+			min-width: 0;
+			flex-direction: column;
+			gap: 4px;
+			padding-left: 20px;
+		}
 
-        .footer a:hover::after {
-            width: 100%;
-        }
+		.url-host {
+			color: var(--text-muted);
+			font-size: 13px;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
 
-        .github-corner {
-            position: fixed;
-            top: 0;
-            right: 0;
-            z-index: 1000;
-        }
+		.url-info::before {
+			content: '';
+			position: absolute;
+			top: 8px;
+			left: 0;
+			width: 8px;
+			height: 8px;
+			border-radius: 50%;
+			background: var(--accent-color);
+			box-shadow: 0 0 0 4px var(--url-dot-glow);
+		}
 
-        .github-corner svg {
-            position: absolute;
-            top: 0;
-            right: 0;
-            border: 0;
-            fill: #6bdf8f;
-            color: #ffffff;
-            width: 80px;
-            height: 80px;
-            transition: fill 0.3s ease;
-        }
+		.url-latency {
+			font-size: 15px;
+			font-weight: 600;
+			height: 36px;
+			padding: 0 16px;
+			border-radius: 8px;
+			background: var(--checking-bg);
+			min-width: 98px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			transition: all 0.3s ease;
+			white-space: nowrap;
+		}
 
-        .github-corner:hover svg {
-            fill: #5bc77d;
-        }
+		.latency-good { color: var(--good-text); background: var(--good-bg); }
+		.latency-fair { color: var(--fair-text); background: var(--fair-bg); }
+		.latency-poor { color: var(--poor-text); background: var(--poor-bg); }
+		.latency-checking { color: var(--checking-text); background: var(--checking-bg); animation: pulse 1.5s infinite; }
 
-        .github-corner .octo-arm {
-            transform-origin: 130px 106px;
-        }
+		@keyframes pulse {
+			0% { opacity: 0.6; }
+			50% { opacity: 1; }
+			100% { opacity: 0.6; }
+		}
 
-        @keyframes octocat-wave {
-            0%, 100% { transform: rotate(0) }
-            20%, 60% { transform: rotate(-25deg) }
-            40%, 80% { transform: rotate(10deg) }
-        }
+		@keyframes shine {
+			0% {
+				left: -100%;
+			}
+			100% {
+				left: 100%;
+			}
+		}
 
-        .github-corner:hover .octo-arm {
-            animation: octocat-wave 560ms ease-in-out;
-        }
+		.footer {
+			border-top: 1px solid var(--footer-border);
+			padding-top: 18px;
+			margin-top: 2px;
+			font-size: 13px;
+			color: var(--text-secondary);
+			text-align: center;
+		}
 
-        @media (max-width: 500px) {
-            .github-corner {
-                width: 60px;
-                height: 60px;
-            }
-            .github-corner:hover .octo-arm {
-                animation: none;
-            }
-            .github-corner .octo-arm {
-                animation: octocat-wave 560ms ease-in-out;
-            }
-        }
-    </style>
+		.footer a {
+			color: var(--primary-color);
+			text-decoration: none;
+			font-weight: 600;
+			position: relative;
+			transition: color 0.3s ease;
+		}
+
+		.footer a::after {
+			content: '';
+			position: absolute;
+			bottom: -2px;
+			left: 0;
+			width: 0;
+			height: 2px;
+			background: var(--primary-color);
+			transition: width 0.3s ease;
+		}
+
+		.footer a:hover::after {
+			width: 100%;
+		}
+
+		@media (max-width: 640px) {
+			body {
+				align-items: flex-start;
+				padding: 18px 12px;
+			}
+
+			.container {
+				width: 100%;
+				padding: 22px;
+				gap: 20px;
+			}
+
+			.topbar {
+				grid-template-columns: auto minmax(0, 1fr);
+				gap: 14px;
+			}
+
+			.logo-wrapper {
+				width: 68px;
+				height: 68px;
+			}
+
+			h1 {
+				font-size: 26px;
+			}
+
+			.summary-badge {
+				grid-column: 1 / -1;
+				justify-self: stretch;
+			}
+
+			.url-item {
+				grid-template-columns: minmax(0, 1fr);
+				gap: 12px;
+			}
+
+			.url-latency {
+				width: 100%;
+			}
+
+		}
+	</style>
 </head>
 <body>
-    <a href="https://github.com/cmliu/Blog-CDN-Gateway" target="_blank" class="github-corner" aria-label="View source on Github">
-        <svg viewBox="0 0 250 250" aria-hidden="true">
-            <path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path>
-            <path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path>
-            <path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path>
-        </svg>
-    </a>
-    <div class="container">
-        <div class="logo-wrapper">
-            <div class="status-ring"></div>
-            <img class="logo" src="${avatar}" alt="Logo">
-        </div>
-        <h1>${title}</h1>
-        <div class="subtitle">正在为您寻找最佳线路...</div>
+	<div class="container">
+		<div class="topbar">
+			<div class="logo-wrapper">
+				<div class="status-ring"></div>
+				<img class="logo" src="${avatar}" alt="Logo">
+			</div>
+			<div class="header-copy">
+				<div class="eyebrow">${siteName}</div>
+				<h1>${title}</h1>
+				<div class="subtitle">正在为您寻找最佳线路...</div>
+			</div>
+			<div class="summary-badge">
+				<span class="status-dot"></span>
+				<span class="summary-label">实时测速</span>
+			</div>
+		</div>
 
-        <ul class="url-list" id="urlList"></ul>
+		<ul class="url-list" id="urlList"></ul>
 
-        <div class="footer">
-            ${beian}
-        </div>
-    </div>
+		<div class="footer">
+			${beian}
+		</div>
+	</div>
 
-    <script>
-        const urls = ${JSON.stringify(urls)};
-        const currentPath = ${JSON.stringify(path)};
-        const currentParams = ${JSON.stringify(params)};
-        const list = document.getElementById('urlList');
+	<script>
+		const urls = ${JSON.stringify(urls)};
+		const currentPath = ${JSON.stringify(path)};
+		const currentParams = ${JSON.stringify(params)};
+		const jumpDelay = ${JSON.stringify(Number(jumpDelay) || 0)};
+		const list = document.getElementById('urlList');
 
-        urls.forEach((url, index) => {
-            const [testUrl, name] = url.split('#');
-            const li = document.createElement('li');
-            li.className = 'url-item';
-            li.id = \`item-\${index}\`;
-            li.innerHTML = \`
-                <span class="url-name">\${name}</span>
-                <span class="url-latency latency-checking" id="latency-\${index}">测速中</span>
-            \`;
-            list.appendChild(li);
-        });
+		function getHostname(url) {
+			try {
+				return new URL(url).hostname;
+			} catch (error) {
+				return url;
+			}
+		}
 
-        async function checkLatency(url) {
-            const start = Date.now();
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 3000);
-                await fetch(url, {
-                    method: 'HEAD',
-                    mode: 'no-cors',
-                    signal: controller.signal,
-                    cache: 'no-store'
-                });
-                clearTimeout(timeoutId);
-                return Date.now() - start;
-            } catch (error) {
-                return 9999;
-            }
-        }
+		function formatLatency(ms) {
+			if (ms === 9999) return '超时';
+			return \`\${(ms / 1000).toFixed(ms < 1000 ? 2 : 1)} 秒\`;
+		}
 
-        async function runTests() {
-            const results = await Promise.all(urls.map(async (urlStr, index) => {
-                const [testUrl, name] = urlStr.split('#');
-                const latency = await checkLatency(testUrl);
-                return { index, name, testUrl, latency };
-            }));
+		urls.forEach((url, index) => {
+			const [testUrl, name] = url.split('#');
+			const li = document.createElement('li');
+			li.className = 'url-item';
+			li.id = \`item-\${index}\`;
+			li.innerHTML = \`
+				<span class="url-info">
+					<span class="url-name">\${name || getHostname(testUrl)}</span>
+					<span class="url-host">\${getHostname(testUrl)}</span>
+				</span>
+				<span class="url-latency latency-checking" id="latency-\${index}">测速中</span>
+			\`;
+			list.appendChild(li);
+		});
 
-            results.forEach(res => {
-                const el = document.getElementById(\`latency-\${res.index}\`);
-                el.classList.remove('latency-checking');
-                el.textContent = res.latency === 9999 ? '超时' : \`\${res.latency}ms\`;
+		function updateLatency(el, latency, ok) {
+			el.classList.remove('latency-checking');
 
-                if (res.latency < 200) el.classList.add('latency-good');
-                else if (res.latency < 500) el.classList.add('latency-fair');
-                else el.classList.add('latency-poor');
-            });
+			if (!ok) {
+				el.classList.add('latency-poor');
+				return;
+			}
 
-            const validResults = results.filter(r => r.latency < 9999);
-            if (validResults.length > 0) {
-                const fastest = validResults.reduce((prev, curr) =>
-                    prev.latency < curr.latency ? prev : curr
-                );
+			if (latency <= 1000) el.classList.add('latency-good');
+			else if (latency <= 2000) el.classList.add('latency-fair');
+			else el.classList.add('latency-poor');
+		}
 
-                const fastestEl = document.getElementById(\`item-\${fastest.index}\`);
-                fastestEl.classList.add('fastest');
+		async function checkRoute(url) {
+			const start = Date.now();
+			const controller = new AbortController();
+			const timeoutId = setTimeout(() => controller.abort(), 3000);
 
-                const subtitle = document.querySelector('.subtitle');
-                subtitle.textContent = \`即将跳转至: \${fastest.name}\`;
-                subtitle.style.color = '#10b981';
+			try {
+				const response = await fetch(url, {
+					method: 'HEAD',
+					signal: controller.signal,
+					cache: 'no-store',
+					redirect: 'follow'
+				});
 
-                setTimeout(() => {
-                    window.location.href = fastest.testUrl + currentPath + currentParams;
-                }, 800);
-            } else {
-                 document.querySelector('.subtitle').textContent = '所有线路均不可用';
-                 document.querySelector('.subtitle').style.color = '#dc2626';
-            }
-        }
+				clearTimeout(timeoutId);
+				const latency = Date.now() - start;
 
-        window.onload = runTests;
-    </script>
+				return {
+					latency,
+					ok: response.status === 200,
+					status: response.status
+				};
+			} catch (error) {
+				clearTimeout(timeoutId);
+
+				return {
+					latency: 9999,
+					ok: false,
+					status: 0
+				};
+			}
+		}
+
+		async function runTests() {
+			let hasWinner = false;
+			let pendingCount = urls.length;
+
+			if (urls.length === 0) {
+				document.querySelector('.subtitle').textContent = '没有可用线路';
+				document.querySelector('.subtitle').classList.add('is-error');
+				document.querySelector('.summary-badge').classList.add('error');
+				document.querySelector('.summary-label').textContent = '检测失败';
+				return;
+			}
+
+			urls.forEach(async (urlStr, index) => {
+				const [testUrl, name] = urlStr.split('#');
+				const result = await checkRoute(testUrl);
+				const item = {
+					index,
+					name: name || getHostname(testUrl),
+					testUrl,
+					...result
+				};
+
+				pendingCount -= 1;
+
+				const el = document.getElementById(\`latency-\${item.index}\`);
+				el.textContent = item.ok ? formatLatency(item.latency) : (item.status === 0 ? '失败' : \`HTTP \${item.status}\`);
+				updateLatency(el, item.latency, item.ok);
+
+				if (!hasWinner && item.ok) {
+					hasWinner = true;
+
+					const fastestEl = document.getElementById(\`item-\${item.index}\`);
+					fastestEl.classList.add('fastest');
+
+					const subtitle = document.querySelector('.subtitle');
+					subtitle.textContent = \`即将跳转至: \${item.name}\`;
+					subtitle.classList.add('is-success');
+					document.querySelector('.summary-label').textContent = '已命中线路';
+
+					setTimeout(() => {
+						window.location.href = item.testUrl + currentPath + currentParams;
+					}, jumpDelay);
+				}
+
+				if (!hasWinner && pendingCount === 0) {
+					document.querySelector('.subtitle').textContent = '所有线路均未返回 200';
+					document.querySelector('.subtitle').classList.add('is-error');
+					document.querySelector('.summary-badge').classList.add('error');
+					document.querySelector('.summary-label').textContent = '检测失败';
+				}
+			});
+		}
+
+		window.onload = runTests;
+	</script>
 </body>
 </html>`;
 }
