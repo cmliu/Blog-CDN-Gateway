@@ -14,7 +14,7 @@ const DEFAULT_CONFIG = {
 	PNG: 'https://raw.cmliussss.com/IMG_0038.png',
 	// 背景图片，填写多张时会随机展示一张；留空则使用内置默认背景。
 	IMG: [
-		'https://raw.cmliussss.com/keqing1080p.jpg'
+		//'https://raw.cmliussss.com/keqing1080p.jpg'
 	],
 	// 命中首个返回 200 的线路后，等待多少毫秒再跳转。
 	JUMP_DELAY: 999,
