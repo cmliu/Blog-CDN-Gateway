@@ -205,6 +205,7 @@ function generateHtml(urls, img, icon, avatar, beian, title, siteName, jumpDelay
 			font-family: 'Outfit', sans-serif;
 			position: relative;
 			min-height: 100vh;
+			min-height: 100svh;
 			display: flex;
 			justify-content: center;
 			align-items: center;
@@ -453,17 +454,7 @@ function generateHtml(urls, img, icon, avatar, beian, title, siteName, jumpDelay
 			display: flex;
 			position: relative;
 			min-width: 0;
-			flex-direction: column;
-			gap: 4px;
 			padding-left: 20px;
-		}
-
-		.url-host {
-			color: var(--text-muted);
-			font-size: 13px;
-			overflow: hidden;
-			text-overflow: ellipsis;
-			white-space: nowrap;
 		}
 
 		.url-info::before {
@@ -547,8 +538,12 @@ function generateHtml(urls, img, icon, avatar, beian, title, siteName, jumpDelay
 
 		@media (max-width: 640px) {
 			body {
-				align-items: flex-start;
+				align-items: center;
 				padding: 18px 12px;
+			}
+
+			body.is-short-mobile {
+				align-items: flex-start;
 			}
 
 			.container {
@@ -619,13 +614,20 @@ function generateHtml(urls, img, icon, avatar, beian, title, siteName, jumpDelay
 		const currentParams = ${JSON.stringify(params)};
 		const jumpDelay = ${JSON.stringify(Number(jumpDelay) || 0)};
 		const list = document.getElementById('urlList');
+		const container = document.querySelector('.container');
 
-		function getHostname(url) {
-			try {
-				return new URL(url).hostname;
-			} catch (error) {
-				return url;
-			}
+		function getRouteName(name, index) {
+			return name && name.trim() ? name.trim() : \`线路 \${index + 1}\`;
+		}
+
+		function updateViewportFit() {
+			const isMobile = window.matchMedia('(max-width: 640px)').matches;
+			const viewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+			const bodyStyle = getComputedStyle(document.body);
+			const verticalPadding = parseFloat(bodyStyle.paddingTop) + parseFloat(bodyStyle.paddingBottom);
+			const isTooTall = container.offsetHeight + verticalPadding > viewportHeight;
+
+			document.body.classList.toggle('is-short-mobile', isMobile && isTooTall);
 		}
 
 		function formatLatency(ms) {
@@ -635,18 +637,22 @@ function generateHtml(urls, img, icon, avatar, beian, title, siteName, jumpDelay
 
 		urls.forEach((url, index) => {
 			const [testUrl, name] = url.split('#');
+			const routeName = getRouteName(name, index);
 			const li = document.createElement('li');
 			li.className = 'url-item';
 			li.id = \`item-\${index}\`;
 			li.innerHTML = \`
 				<span class="url-info">
-					<span class="url-name">\${name || getHostname(testUrl)}</span>
-					<span class="url-host">\${getHostname(testUrl)}</span>
+					<span class="url-name">\${routeName}</span>
 				</span>
 				<span class="url-latency latency-checking" id="latency-\${index}">测速中</span>
 			\`;
 			list.appendChild(li);
 		});
+
+		updateViewportFit();
+		window.addEventListener('resize', updateViewportFit);
+		if (window.visualViewport) window.visualViewport.addEventListener('resize', updateViewportFit);
 
 		function updateLatency(el, latency, ok) {
 			el.classList.remove('latency-checking');
@@ -710,7 +716,7 @@ function generateHtml(urls, img, icon, avatar, beian, title, siteName, jumpDelay
 				const result = await checkRoute(testUrl);
 				const item = {
 					index,
-					name: name || getHostname(testUrl),
+					name: getRouteName(name, index),
 					testUrl,
 					...result
 				};
@@ -720,6 +726,7 @@ function generateHtml(urls, img, icon, avatar, beian, title, siteName, jumpDelay
 				const el = document.getElementById(\`latency-\${item.index}\`);
 				el.textContent = item.ok ? formatLatency(item.latency) : (item.status === 0 ? '失败' : \`HTTP \${item.status}\`);
 				updateLatency(el, item.latency, item.ok);
+				updateViewportFit();
 
 				if (!hasWinner && item.ok) {
 					hasWinner = true;
@@ -746,7 +753,10 @@ function generateHtml(urls, img, icon, avatar, beian, title, siteName, jumpDelay
 			});
 		}
 
-		window.onload = runTests;
+		window.addEventListener('load', () => {
+			updateViewportFit();
+			runTests();
+		});
 	</script>
 </body>
 </html>`;
