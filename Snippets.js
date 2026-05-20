@@ -1,85 +1,84 @@
-let urls = [
-    'https://blog.cmliussss.com#EdgeOne CDN',
-    'https://ali.blog.cmliussss.com#Ali CDN',
-    'https://fastly.blog.cmliussss.com#Fastly CDN',
-    'https://vercel.blog.cmliussss.com#Vercel CDN',
-    'https://netlify.blog.cmliussss.com#Netlify CDN'
-];
+const CONFIG = {
+    // CDN 测速地址，格式为 "访问地址#显示名称"。
+    URLS: [
+        'https://blog.cmliussss.com#Ali CDN',
+        'https://fastly.blog.cmliussss.com#Fastly CDN',
+        'https://vercel.blog.cmliussss.com#Vercel CDN',
+        'https://netlify.blog.cmliussss.com#Netlify CDN'
+    ],
+    // /ads.txt 返回内容。
+    ADS: 'google.com, pub-9350003957494520, DIRECT, f08c47fec0942fa0',
+    // 网站图标，同时用于响应 /favicon.ico。
+    ICO: 'https://raw.cmliussss.com/favicon.ico',
+    // 页面中间显示的头像或 Logo。
+    PNG: 'https://raw.cmliussss.com/IMG_0038.png',
+    // 背景图片，填写多张时会随机展示一张。
+    IMG: [
+        'https://raw.cmliussss.com/keqing1080p.jpg'
+    ],
+    // 页脚内容，可以写备案号、统计代码或项目链接。
+    BEIAN: `由 <a href="https://github.com/cmliu/Blog-CDN-Gateway" target="_blank" rel="noopener noreferrer">Blog-CDN-Gateway</a> 强力驱动`,
+    // 页面主标题。
+    TITLE: 'BlogCDN 智能访问网关',
+    // 浏览器标题栏中显示的站点名称。
+    NAME: 'CMLiussss Blog'
+};
 
-/**
- * EdgeOne Pages 入口函数
- * @param {Object} context - EdgeOne Pages 上下文对象
- * @returns {Promise<Response>}
- */
-export async function onRequest(context) {
-    return await handleRequest(context.request, context.env);
-}
-
-/**
- * Cloudflare Workers 入口函数
- * @returns {Object} Worker 处理器对象
- */
 export default {
-    async fetch(request, env, ctx) {
-        return await handleRequest(request, env);
+    async fetch(request) {
+        return handleRequest(request);
     }
 };
 
-async function handleRequest(request, env) {
+async function handleRequest(request) {
     const url = new URL(request.url);
     const path = url.pathname;
     const params = url.search;
 
-    let currentUrls = urls;
-    // 如果 env.URL 存在，则使用 env.URL 替换默认 urls
-    if (env.URL) currentUrls = await ADD(env.URL);
-
-    const ads = env.ADS || 'google.com, pub-9350003957494520, DIRECT, f08c47fec0942fa0';
-    const 网站图标 = env.ICO || 'https://raw.cmliussss.com/favicon.ico';
-    const 网站头像 = env.PNG || 'https://raw.cmliussss.com/IMG_0038.png';
-    const 网络备案 = env.BEIAN || `<b>📈 今日访问: </b><span id="visitCount">加载中...</span> <b>📊 当前在线: </b><div id="liveuser" style="display: inline;">加载中...</div> <script src="https://liveuser.cmliussss.com/main.js?sessionId=blog.cmliussss.com"></script> <script> fetch('https://tongji.blog.cmliussss.com/?id=blog.cmliussss.com') .then(r => r.json()) .then(d => document.getElementById('visitCount').innerText = d.visitCount) .catch(e => document.getElementById('visitCount').innerText = '加载失败'); </script>`;
-    const 网页标题 = env.TITLE || 'BlogCDN 智能访问网关';
-    const 站点名称 = env.NAME || 'CMLiussss Blog';
-
-    if (url.pathname.toLowerCase() == '/ads.txt') {
-        return new Response(ads, {
+    if (url.pathname.toLowerCase() === '/ads.txt') {
+        return new Response(CONFIG.ADS, {
             headers: {
                 'content-type': 'text/plain;charset=UTF-8'
             }
         });
-    } else if (url.pathname.toLowerCase() == '/favicon.ico') {
-        return fetch(网站图标);
-    } else {
-        // 先测速，不加载背景图片
-        let img = 'https://raw.cmliussss.com/keqing1080p.jpg'; // 默认图片
-        if (env.IMG) {
-            const imgs = await ADD(env.IMG);
-            img = imgs[Math.floor(Math.random() * imgs.length)];
-        }
-
-        // 生成将 urls 数组传递给前端 JavaScript 的 HTML
-        const html = generateHtml(currentUrls, img, 网站图标, 网站头像, 网络备案, 网页标题, 站点名称, path, params);
-
-        return new Response(html, {
-            headers: { 'content-type': 'text/html;charset=UTF-8' }
-        });
     }
+
+    if (url.pathname.toLowerCase() === '/favicon.ico') {
+        return fetch(CONFIG.ICO);
+    }
+
+    const urls = toList(CONFIG.URLS);
+    const images = toList(CONFIG.IMG);
+    const img = images.length > 0
+        ? images[Math.floor(Math.random() * images.length)]
+        : 'https://raw.cmliussss.com/keqing1080p.jpg';
+
+    const html = generateHtml(
+        urls,
+        img,
+        CONFIG.ICO,
+        CONFIG.PNG,
+        CONFIG.BEIAN,
+        CONFIG.TITLE,
+        CONFIG.NAME,
+        path,
+        params
+    );
+
+    return new Response(html, {
+        headers: { 'content-type': 'text/html;charset=UTF-8' }
+    });
 }
 
-// 辅助函数：将env.URLS字符串处理成数组
-async function ADD(envadd) {
-    // 将制表符、双引号、单引号和换行符都替换为逗号
-    // 然后将连续的多个逗号替换为单个逗号
-    var addtext = envadd.replace(/[	|"'\r\n]+/g, ',').replace(/,+/g, ',');
+function toList(value) {
+    if (Array.isArray(value)) return value.filter(Boolean);
+    if (!value) return [];
 
-    // 删除开头和结尾的逗号（如果有的话）
-    if (addtext.charAt(0) == ',') addtext = addtext.slice(1);
-    if (addtext.charAt(addtext.length - 1) == ',') addtext = addtext.slice(0, addtext.length - 1);
+    let text = String(value).replace(/[\t|"'\r\n]+/g, ',').replace(/,+/g, ',');
+    if (text.charAt(0) === ',') text = text.slice(1);
+    if (text.charAt(text.length - 1) === ',') text = text.slice(0, text.length - 1);
 
-    // 使用逗号分割字符串，得到地址数组
-    const add = addtext.split(',');
-
-    return add;
+    return text ? text.split(',').filter(Boolean) : [];
 }
 
 function generateHtml(urls, img, icon, avatar, beian, title, siteName, path, params) {
@@ -327,7 +326,7 @@ function generateHtml(urls, img, icon, avatar, beian, title, siteName, path, par
             justify-content: center;
             transition: all 0.3s ease;
         }
-        
+
         @media (prefers-color-scheme: dark) {
             .url-latency {
                 background: rgba(255, 255, 255, 0.1);
@@ -409,25 +408,25 @@ function generateHtml(urls, img, icon, avatar, beian, title, siteName, path, par
             height: 80px;
             transition: fill 0.3s ease;
         }
-        
+
         .github-corner:hover svg {
             fill: #5bc77d;
         }
-        
+
         .github-corner .octo-arm {
             transform-origin: 130px 106px;
         }
-        
+
         @keyframes octocat-wave {
             0%, 100% { transform: rotate(0) }
             20%, 60% { transform: rotate(-25deg) }
             40%, 80% { transform: rotate(10deg) }
         }
-        
+
         .github-corner:hover .octo-arm {
             animation: octocat-wave 560ms ease-in-out;
         }
-        
+
         @media (max-width: 500px) {
             .github-corner {
                 width: 60px;
@@ -457,7 +456,7 @@ function generateHtml(urls, img, icon, avatar, beian, title, siteName, path, par
         </div>
         <h1>${title}</h1>
         <div class="subtitle">正在为您寻找最佳线路...</div>
-        
+
         <ul class="url-list" id="urlList"></ul>
 
         <div class="footer">
@@ -467,11 +466,10 @@ function generateHtml(urls, img, icon, avatar, beian, title, siteName, path, par
 
     <script>
         const urls = ${JSON.stringify(urls)};
-        const currentPath = '${path}';
-        const currentParams = '${params}';
+        const currentPath = ${JSON.stringify(path)};
+        const currentParams = ${JSON.stringify(params)};
         const list = document.getElementById('urlList');
 
-        // Render Initial List
         urls.forEach((url, index) => {
             const [testUrl, name] = url.split('#');
             const li = document.createElement('li');
@@ -489,9 +487,9 @@ function generateHtml(urls, img, icon, avatar, beian, title, siteName, path, par
             try {
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 3000);
-                await fetch(url, { 
-                    method: 'HEAD', 
-                    mode: 'no-cors', 
+                await fetch(url, {
+                    method: 'HEAD',
+                    mode: 'no-cors',
                     signal: controller.signal,
                     cache: 'no-store'
                 });
@@ -509,32 +507,29 @@ function generateHtml(urls, img, icon, avatar, beian, title, siteName, path, par
                 return { index, name, testUrl, latency };
             }));
 
-            // Update UI with results
             results.forEach(res => {
                 const el = document.getElementById(\`latency-\${res.index}\`);
                 el.classList.remove('latency-checking');
                 el.textContent = res.latency === 9999 ? '超时' : \`\${res.latency}ms\`;
-                
+
                 if (res.latency < 200) el.classList.add('latency-good');
                 else if (res.latency < 500) el.classList.add('latency-fair');
                 else el.classList.add('latency-poor');
             });
 
-            // Find fastest
             const validResults = results.filter(r => r.latency < 9999);
             if (validResults.length > 0) {
-                const fastest = validResults.reduce((prev, curr) => 
+                const fastest = validResults.reduce((prev, curr) =>
                     prev.latency < curr.latency ? prev : curr
                 );
-                
+
                 const fastestEl = document.getElementById(\`item-\${fastest.index}\`);
                 fastestEl.classList.add('fastest');
-                
+
                 const subtitle = document.querySelector('.subtitle');
                 subtitle.textContent = \`即将跳转至: \${fastest.name}\`;
                 subtitle.style.color = '#10b981';
 
-                // Redirect after shine animation completes
                 setTimeout(() => {
                     window.location.href = fastest.testUrl + currentPath + currentParams;
                 }, 800);
@@ -549,4 +544,3 @@ function generateHtml(urls, img, icon, avatar, beian, title, siteName, path, par
 </body>
 </html>`;
 }
-
