@@ -14,7 +14,7 @@ const DEFAULT_CONFIG = {
 	PNG: 'https://raw.cmliussss.com/IMG_0038.png',
 	// 背景图片，填写多张时会随机展示一张；留空则使用内置默认背景。
 	IMG: [
-		//'https://raw.cmliussss.com/keqing1080p.jpg'
+		'https://raw.cmliussss.com/keqing1080p.jpg'
 	],
 	// 命中首个返回 200 的线路后，等待多少毫秒再跳转。
 	JUMP_DELAY: 999,
@@ -319,7 +319,7 @@ function generateHtml(urls, img, icon, avatar, beian, title, siteName, jumpDelay
 			transition: transform 0.5s ease;
 		}
 
-		.logo:hover {
+		.logo-wrapper.is-logo-ready .logo:hover {
 			transform: scale(1.05) rotate(5deg);
 		}
 
@@ -333,7 +333,13 @@ function generateHtml(urls, img, icon, avatar, beian, title, siteName, jumpDelay
 			border: 2px solid transparent;
 			border-top-color: var(--ring-primary);
 			border-right-color: var(--ring-accent);
+			opacity: 0;
+			transition: opacity 0.25s ease;
+		}
+
+		.logo-wrapper.is-logo-ready .status-ring {
 			animation: spin 2s linear infinite;
+			opacity: 1;
 		}
 
 		@keyframes spin {
@@ -652,6 +658,8 @@ function generateHtml(urls, img, icon, avatar, beian, title, siteName, jumpDelay
 		const jumpDelay = ${JSON.stringify(Number(jumpDelay) || 0)};
 		const list = document.getElementById('urlList');
 		const container = document.querySelector('.container');
+		const logoWrapper = document.querySelector('.logo-wrapper');
+		const logo = document.querySelector('.logo');
 
 		function getRouteName(name, index) {
 			return name && name.trim() ? name.trim() : \`线路 \${index + 1}\`;
@@ -690,6 +698,17 @@ function generateHtml(urls, img, icon, avatar, beian, title, siteName, jumpDelay
 		updateViewportFit();
 		window.addEventListener('resize', updateViewportFit);
 		if (window.visualViewport) window.visualViewport.addEventListener('resize', updateViewportFit);
+
+		function enableLogoEffects() {
+			logoWrapper.classList.add('is-logo-ready');
+			updateViewportFit();
+		}
+
+		if (logo.complete && logo.naturalWidth > 0) {
+			enableLogoEffects();
+		} else {
+			logo.addEventListener('load', enableLogoEffects, { once: true });
+		}
 
 		function updateLatency(el, latency, ok) {
 			el.classList.remove('latency-checking');
@@ -790,10 +809,8 @@ function generateHtml(urls, img, icon, avatar, beian, title, siteName, jumpDelay
 			});
 		}
 
-		window.addEventListener('load', () => {
-			updateViewportFit();
-			runTests();
-		});
+		window.addEventListener('load', updateViewportFit);
+		runTests();
 	</script>
 </body>
 </html>`;
