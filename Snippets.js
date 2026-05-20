@@ -21,7 +21,7 @@ const CONFIG = {
 	// 页脚内容，可以写备案号、统计代码或项目链接。
 	BEIAN: `由 <a href="https://github.com/cmliu/Blog-CDN-Gateway" target="_blank" rel="noopener noreferrer">Blog-CDN-Gateway</a> 强力驱动`,
 	// 页面主标题。
-	TITLE: 'BlogCDN 智能访问网关',
+	TITLE: 'BlogCDN 智能路由',
 	// 浏览器标题栏中显示的站点名称。
 	NAME: 'CMLiussss Blog'
 };
