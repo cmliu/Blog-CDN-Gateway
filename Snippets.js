@@ -737,7 +737,7 @@ function generateHtml(urls, img, icon, avatar, beian, title, siteName, jumpDelay
 					const subtitle = document.querySelector('.subtitle');
 					subtitle.textContent = \`即将跳转至: \${item.name}\`;
 					subtitle.classList.add('is-success');
-					document.querySelector('.summary-label').textContent = '已命中线路';
+					document.querySelector('.summary-label').textContent = '命中线路';
 
 					setTimeout(() => {
 						window.location.href = item.testUrl + currentPath + currentParams;
